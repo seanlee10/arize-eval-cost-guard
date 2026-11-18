@@ -7,6 +7,8 @@ Sample code that keeps LLM-as-a-judge spend on Arize evaluation tasks inside lim
 | `guard.py` | On a schedule (EventBridge + Lambda, or cron) | Caps task sampling, forces eval traces on, pauses tasks once a space or task goes over its monthly evaluation budget |
 | `webhook_handler.py` | When an Arize monitor triggers (Lambda Function URL) | Pauses every continuous LLM evaluation task in the monitor's space, or sets their sampling to 0 |
 
+This is sample code, not an officially supported Arize product. Review it and run it in report-only mode before letting it change tasks.
+
 Python 3.10+, standard library only. Code evaluations and dataset (experiment) tasks are never touched, since they don't call an LLM on a schedule.
 
 ## What the guard enforces
