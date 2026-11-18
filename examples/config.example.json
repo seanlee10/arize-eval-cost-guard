@@ -1,0 +1,23 @@
+{
+  "arize_host": "https://arize.example.com",
+  "tz_offset_hours": 8,
+  "defaults": {
+    "max_sampling_rate": 0.1,
+    "require_eval_traces": true,
+    "cost_per_eval_usd": 0.002
+  },
+  "spaces": [
+    {
+      "space_id": "<SPACE_ID>",
+      "name": "team-a",
+      "monthly_eval_budget": 200000
+    },
+    {
+      "space_id": "<SPACE_ID>",
+      "name": "team-b",
+      "max_sampling_rate": 0.05,
+      "task_monthly_eval_budget": 50000,
+      "exempt_task_ids": ["<TASK_ID>"]
+    }
+  ]
+}

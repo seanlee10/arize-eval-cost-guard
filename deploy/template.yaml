@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Arize evaluation cost guard (scheduled policy check and monitor webhook receiver)
+
+Parameters:
+  ArizeApiKeySecretArn:
+    Type: String
+    Description: Secrets Manager secret holding the Arize API key (plain string)
+  WebhookSecretArn:
+    Type: String
+    Description: Secrets Manager secret holding the webhook signing secret (whsec_...)
+  Schedule:
+    Type: String
+    Default: rate(1 hour)
+  ApplyChanges:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "false"
+    Description: Leave false for a report-only first week, then switch to true
+  WebhookAction:
+    Type: String
+    AllowedValues: [pause, zero_sampling]
+    Default: pause
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets that can reach the Arize host
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+
+Globals:
+  Function:
+    Runtime: python3.12
+    CodeUri: ..
+    Timeout: 300
+    MemorySize: 256
+    VpcConfig:
+      SubnetIds: !Ref SubnetIds
+      SecurityGroupIds: !Ref SecurityGroupIds
+    Environment:
+      Variables:
+        COST_GUARD_CONFIG: config.json
+        ARIZE_API_KEY: !Sub "{{resolve:secretsmanager:${ArizeApiKeySecretArn}}}"
+
+Resources:
+  ScheduledGuard:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: guard.lambda_handler
+      Environment:
+        Variables:
+          COST_GUARD_APPLY: !Ref ApplyChanges
+      Events:
+        Hourly:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref Schedule
+
+  MonitorWebhook:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: webhook_handler.lambda_handler
+      Timeout: 60
+      Environment:
+        Variables:
+          WEBHOOK_ACTION: !Ref WebhookAction
+          ARIZE_WEBHOOK_SECRET: !Sub "{{resolve:secretsmanager:${WebhookSecretArn}}}"
+      FunctionUrlConfig:
+        AuthType: NONE
+
+Outputs:
+  WebhookUrl:
+    Description: Register this URL as the Arize webhook endpoint
+    Value: !GetAtt MonitorWebhookUrl.FunctionUrl
