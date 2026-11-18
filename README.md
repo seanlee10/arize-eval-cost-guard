@@ -69,6 +69,17 @@ When the monitor triggers, the function pauses the space's continuous LLM evalua
 
 The monitor only sees judge calls from tasks with eval traces on, so run the scheduled guard with `require_eval_traces` too.
 
+### Testing the circuit breaker
+
+HMAC-signed webhooks don't support Arize's test delivery, so test with a real monitor:
+
+1. Exempt every task in the test space except one you can pause safely.
+2. Create a monitor on the Eval Traces project with a threshold of 0 and the webhook attached. A new monitor evaluates when it's created, so with any judge calls in the window it triggers straight away.
+3. Check the webhook's delivery attempts (`GET /v2/webhooks/<WEBHOOK_ID>/delivery-attempts`) for a 200, and the function's logs for the task it paused.
+4. Resume the task and delete the test monitor.
+
+A Function URL with auth type NONE needs both `lambda:InvokeFunctionUrl` and `lambda:InvokeFunction` on the function's resource policy. Scope the second one with the `lambda:InvokedViaFunctionUrl` condition so the function can't be invoked any other way.
+
 ## Tests
 
 ```bash
